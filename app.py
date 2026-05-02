@@ -4,6 +4,7 @@ import uuid
 import json
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, session, jsonify
+from flask_cors import CORS
 
 from rag.rag_engine import RAGEngine
 from rag import pdf_extractor, openrouter
@@ -18,6 +19,7 @@ else:
 
 # ── Flask setup ────────────────────────────────────────────────────
 app = Flask(__name__)
+CORS(app)
 app.secret_key = "nexaai_ultra_secret_2026"
 app.config["UPLOAD_FOLDER"] = "uploads"
 SESSIONS_META_DIR = os.path.join("data", "sessions")
