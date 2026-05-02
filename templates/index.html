@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="NexaAI – Chat with any PDF document using local AI, no API keys needed." />
+  <title>NexaAI – Intelligent PDF Chat</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+  <aside class="sidebar" id="sidebar">
+
+    <!-- Brand -->
+    <div class="brand">
+      <div class="brand-logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="url(#lg1)"/>
+          <path d="M2 17L12 22L22 17" stroke="url(#lg2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="url(#lg3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="lg1" x1="2" y1="7" x2="22" y2="7" gradientUnits="userSpaceOnUse"><stop stop-color="#4f9cf9"/><stop offset="1" stop-color="#a855f7"/></linearGradient>
+            <linearGradient id="lg2" x1="2" y1="19.5" x2="22" y2="19.5" gradientUnits="userSpaceOnUse"><stop stop-color="#4f9cf9"/><stop offset="1" stop-color="#a855f7"/></linearGradient>
+            <linearGradient id="lg3" x1="2" y1="14.5" x2="22" y2="14.5" gradientUnits="userSpaceOnUse"><stop stop-color="#4f9cf9"/><stop offset="1" stop-color="#a855f7"/></linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <span class="brand-name">NexaAI</span>
+    </div>
+
+    <!-- New Chat -->
+    <button class="btn-new-chat" id="btn-new-chat">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      New Chat
+    </button>
+
+    <!-- Upload Zone -->
+    <div class="sidebar-section">
+      <p class="sidebar-label">DOCUMENT</p>
+
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" name="pdf_file" accept=".pdf" hidden />
+        <div class="drop-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        </div>
+        <p class="drop-primary" id="drop-label">Drop PDF or click to browse</p>
+        <p class="drop-secondary">PDF files only</p>
+      </div>
+
+      <button class="btn-upload" id="btn-upload" disabled>
+        <span id="upload-btn-text">Analyze Document</span>
+        <div class="upload-spinner" id="upload-spinner" style="display:none;"></div>
+      </button>
+
+      <!-- Upload status -->
+      <div class="upload-status" id="upload-status" style="display:none;"></div>
+    </div>
+
+    <!-- Past Chats -->
+    <div class="sidebar-section history-section">
+      <div class="sidebar-label-row">
+        <p class="sidebar-label">RECENT CHATS</p>
+        <button class="btn-icon-sm" id="btn-clear-history" title="Clear all history">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+        </button>
+      </div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+
+  </aside>
+
+  <!-- ═══════════════════ MAIN CHAT ═══════════════════ -->
+  <main class="chat-main">
+
+    <!-- Header -->
+    <header class="chat-header">
+      <div class="header-doc" id="header-doc">
+        <div class="header-doc-icon" id="header-doc-icon" style="display:none;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        </div>
+        <span class="header-doc-name" id="header-doc-name">No document loaded</span>
+      </div>
+      <div class="header-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span class="status-text" id="status-text">Idle</span>
+      </div>
+    </header>
+
+    <!-- Messages -->
+    <div class="messages-area" id="messages-area">
+      <div class="welcome-state" id="welcome-state">
+        <div class="welcome-graphic">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        </div>
+        <h2 class="welcome-title">Upload a PDF to begin</h2>
+        <p class="welcome-sub">Drop any PDF in the sidebar and ask anything about it. All processing happens locally on your device.</p>
+        <div class="welcome-features">
+          <div class="feature-pill">No API keys</div>
+          <div class="feature-pill">100% local</div>
+          <div class="feature-pill">Instant answers</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Bar -->
+    <div class="input-bar">
+      <div class="input-row">
+        <textarea
+          id="question-input"
+          class="question-textarea"
+          placeholder="Ask anything about your document…"
+          rows="1"
+          disabled
+        ></textarea>
+        <button class="btn-send" id="btn-send" disabled title="Send (Enter)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+        </button>
+      </div>
+      <p class="input-hint" id="input-hint">Upload a PDF document to start chatting</p>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Typing indicator template (hidden) -->
+<div class="typing-indicator" id="typing-tpl" style="display:none;">
+  <div class="ai-bubble-row">
+    <div class="ai-avatar-sm">N</div>
+    <div class="message-bubble ai-bubble">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ═══════════════════════════════════════════════════════
+     STATE
+  ═══════════════════════════════════════════════════════ */
+  const LS_KEY = 'nexaai_v3_history';
+  let activePdfName = '{{ pdf_filename | default("") }}';
+  let currentSessionMessages = [];   // messages in current view
+  let currentHistoryId = null;       // id in localStorage for active session
+
+  /* ═══════════════════════════════════════════════════════
+     HELPERS
+  ═══════════════════════════════════════════════════════ */
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; }
+    catch { return []; }
+  }
+  function setHistory(h) {
+    localStorage.setItem(LS_KEY, JSON.stringify(h));
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function setStatus(text, active) {
+    document.getElementById('status-text').textContent = text;
+    const dot = document.getElementById('status-dot');
+    dot.className = 'status-dot' + (active ? ' active' : '');
+  }
+
+  function setHeaderDoc(name) {
+    const icon = document.getElementById('header-doc-icon');
+    const nameEl = document.getElementById('header-doc-name');
+    if (name) {
+      icon.style.display = 'flex';
+      nameEl.textContent = name;
+      document.getElementById('header-doc').classList.add('has-doc');
+      setStatus('Ready', true);
+    } else {
+      icon.style.display = 'none';
+      nameEl.textContent = 'No document loaded';
+      document.getElementById('header-doc').classList.remove('has-doc');
+      setStatus('Idle', false);
+    }
+  }
+
+  function enableInput(enable) {
+    const inp = document.getElementById('question-input');
+    const btn = document.getElementById('btn-send');
+    const hint = document.getElementById('input-hint');
+    inp.disabled = !enable;
+    btn.disabled = !enable;
+    hint.style.display = enable ? 'none' : 'block';
+    if (enable) inp.focus();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     MESSAGES
+  ═══════════════════════════════════════════════════════ */
+  function clearMessages(keepWelcome) {
+    const area = document.getElementById('messages-area');
+    area.innerHTML = '';
+    if (keepWelcome) {
+      const ws = document.createElement('div');
+      ws.id = 'welcome-state';
+      ws.className = 'welcome-state';
+      ws.innerHTML = `
+        <div class="welcome-graphic"><svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
+        <h2 class="welcome-title">Upload a PDF to begin</h2>
+        <p class="welcome-sub">Drop any PDF in the sidebar and ask anything about it.</p>
+        <div class="welcome-features">
+          <div class="feature-pill">No API keys</div>
+          <div class="feature-pill">100% local</div>
+          <div class="feature-pill">Instant answers</div>
+        </div>`;
+      area.appendChild(ws);
+    }
+  }
+
+  function removeWelcome() {
+    const ws = document.getElementById('welcome-state');
+    if (ws) ws.remove();
+  }
+
+  function appendMessage(text, role, save=true) {
+    removeWelcome();
+    const area = document.getElementById('messages-area');
+
+    const wrapper = document.createElement('div');
+    wrapper.className = role === 'user' ? 'user-msg-row' : 'ai-bubble-row';
+
+    if (role === 'user') {
+      wrapper.innerHTML = `<div class="message-bubble user-bubble"><p>${escapeHtml(text)}</p></div>`;
+    } else {
+      wrapper.innerHTML = `
+        <div class="ai-avatar-sm">N</div>
+        <div class="message-bubble ai-bubble">
+          <p>${escapeHtml(text)}</p>
+          <button class="copy-btn" title="Copy" onclick="copyText(this)" data-text="${escapeHtml(text)}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          </button>
+        </div>`;
+    }
+
+    area.appendChild(wrapper);
+    area.scrollTop = area.scrollHeight;
+
+    if (save) {
+      currentSessionMessages.push({ role, text });
+    }
+  }
+
+  function showTyping() {
+    removeWelcome();
+    const area = document.getElementById('messages-area');
+    const el = document.createElement('div');
+    el.id = 'typing-indicator';
+    el.className = 'ai-bubble-row';
+    el.innerHTML = `<div class="ai-avatar-sm">N</div><div class="message-bubble ai-bubble typing-bubble"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>`;
+    area.appendChild(el);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function hideTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  function copyText(btn) {
+    navigator.clipboard.writeText(btn.dataset.text).then(() => {
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+      }, 1500);
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     HISTORY SIDEBAR
+  ═══════════════════════════════════════════════════════ */
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    const history = getHistory();
+
+    if (!history.length) {
+      list.innerHTML = '<p class="history-empty">No conversations yet</p>';
+      return;
+    }
+
+    list.innerHTML = history.map(item => `
+      <div class="history-item ${item.id === currentHistoryId ? 'active' : ''}" data-id="${escapeHtml(item.id)}">
+        <div class="history-item-icon">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+        </div>
+        <div class="history-item-body">
+          <p class="history-pdf-name">${escapeHtml(item.pdfName)}</p>
+          <p class="history-first-q">${escapeHtml(item.title)}</p>
+          <p class="history-date">${escapeHtml(item.date)}</p>
+        </div>
+      </div>
+    `).join('');
+
+    list.querySelectorAll('.history-item').forEach(el => {
+      el.addEventListener('click', () => loadHistorySession(el.dataset.id));
+    });
+  }
+
+  function saveCurrentToHistory() {
+    if (!currentSessionMessages.length || !activePdfName) return;
+    const history = getHistory();
+    const firstQ = currentSessionMessages.find(m => m.role === 'user');
+
+    const existing = history.findIndex(h => h.id === currentHistoryId);
+    const record = {
+      id: currentHistoryId,
+      pdfName: activePdfName,
+      title: firstQ ? firstQ.text.substring(0, 45) + (firstQ.text.length > 45 ? '…' : '') : 'Chat',
+      date: new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }),
+      messages: currentSessionMessages.slice(),
+    };
+
+    if (existing > -1) history[existing] = record;
+    else history.unshift(record);
+
+    setHistory(history);
+    renderHistory();
+  }
+
+  function loadHistorySession(id) {
+    const history = getHistory();
+    const item = history.find(h => h.id === id);
+    if (!item) return;
+
+    currentHistoryId = id;
+    currentSessionMessages = item.messages.slice();
+    activePdfName = item.pdfName;
+
+    setHeaderDoc(item.pdfName);
+    clearMessages(false);
+
+    item.messages.forEach(m => appendMessage(m.text, m.role, false));
+    renderHistory();
+
+    // Note: this session may not match the server session.
+    // We show the history read-only with a notice.
+    const area = document.getElementById('messages-area');
+    const notice = document.createElement('div');
+    notice.className = 'session-notice';
+    notice.textContent = 'You are viewing a past conversation. Upload the PDF again to continue chatting.';
+    area.prepend(notice);
+
+    enableInput(false);
+    document.getElementById('input-hint').textContent = 'Re-upload the PDF to continue this conversation.';
+    document.getElementById('input-hint').style.display = 'block';
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     NEW CHAT
+  ═══════════════════════════════════════════════════════ */
+  async function newChat() {
+    // Save current conversation before clearing
+    saveCurrentToHistory();
+
+    // Reset server session
+    try {
+      await fetch('/new-session', { method: 'POST' });
+    } catch (e) { /* ignore */ }
+
+    // Reset client state
+    activePdfName = '';
+    currentSessionMessages = [];
+    currentHistoryId = 'session_' + Date.now();
+
+    // Reset UI
+    setHeaderDoc('');
+    clearMessages(true);
+    enableInput(false);
+    document.getElementById('input-hint').textContent = 'Upload a PDF document to start chatting';
+    resetUploadZone();
+    renderHistory();
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     UPLOAD ZONE
+  ═══════════════════════════════════════════════════════ */
+  function resetUploadZone() {
+    const dz = document.getElementById('drop-zone');
+    const label = document.getElementById('drop-label');
+    const btn = document.getElementById('btn-upload');
+    const status = document.getElementById('upload-status');
+    const fileInput = document.getElementById('file-input');
+
+    fileInput.value = '';
+    label.textContent = 'Drop PDF or click to browse';
+    dz.classList.remove('has-file', 'dragging');
+    btn.disabled = true;
+    status.style.display = 'none';
+    status.className = 'upload-status';
+    status.textContent = '';
+  }
+
+  function showUploadStatus(msg, type) {
+    const el = document.getElementById('upload-status');
+    el.textContent = msg;
+    el.className = `upload-status status-${type}`;
+    el.style.display = 'block';
+  }
+
+  // Drop zone interactions
+  const dropZone = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragging');
+  });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragging'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragging');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      handleFileSelected(file);
+    } else {
+      showUploadStatus('Only PDF files are supported.', 'error');
+    }
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFileSelected(fileInput.files[0]);
+  });
+
+  function handleFileSelected(file) {
+    const label = document.getElementById('drop-label');
+    const btn = document.getElementById('btn-upload');
+
+    label.textContent = file.name;
+    dropZone.classList.add('has-file');
+    btn.disabled = false;
+    document.getElementById('upload-status').style.display = 'none';
+  }
+
+  document.getElementById('btn-upload').addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const btnText = document.getElementById('upload-btn-text');
+    const spinner = document.getElementById('upload-spinner');
+    const btn = document.getElementById('btn-upload');
+
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    spinner.style.display = 'block';
+    setStatus('Processing…', false);
+
+    const formData = new FormData();
+    formData.append('pdf_file', file);
+
+    try {
+      const res = await fetch('/upload', {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: formData,
+      });
+      const data = await res.json();
+
+      if (data.ok) {
+        activePdfName = data.filename;
+        currentHistoryId = 'session_' + Date.now();
+        currentSessionMessages = [];
+
+        setHeaderDoc(activePdfName);
+        clearMessages(false);
+        enableInput(true);
+        document.getElementById('input-hint').style.display = 'none';
+
+        showUploadStatus('Ready to chat!', 'success');
+
+        const area = document.getElementById('messages-area');
+        const starter = document.createElement('div');
+        starter.className = 'session-start';
+        starter.innerHTML = `<span>Loaded: <strong>${escapeHtml(activePdfName)}</strong></span>`;
+        area.appendChild(starter);
+        renderHistory();
+      } else {
+        showUploadStatus(data.error || 'Upload failed.', 'error');
+        setStatus('Error', false);
+      }
+    } catch (err) {
+      showUploadStatus('Network error. Please try again.', 'error');
+      setStatus('Error', false);
+    } finally {
+      btn.disabled = false;
+      btnText.style.display = 'block';
+      spinner.style.display = 'none';
+    }
+  });
+
+  /* ═══════════════════════════════════════════════════════
+     SEND QUESTION
+  ═══════════════════════════════════════════════════════ */
+  async function sendQuestion() {
+    const inp = document.getElementById('question-input');
+    const question = inp.value.trim();
+    if (!question) return;
+
+    inp.value = '';
+    inp.style.height = 'auto';
+    inp.disabled = true;
+    document.getElementById('btn-send').disabled = true;
+    setStatus('Thinking…', true);
+
+    appendMessage(question, 'user');
+    showTyping();
+
+    try {
+      const res = await fetch('/ask', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+      const data = await res.json();
+
+      hideTyping();
+
+      if (res.ok) {
+        appendMessage(data.answer, 'ai');
+        saveCurrentToHistory();
+        setStatus('Ready', true);
+      } else {
+        appendMessage(data.error || 'Something went wrong. Please try again.', 'ai');
+        setStatus('Ready', true);
+      }
+    } catch (err) {
+      hideTyping();
+      appendMessage('Network error. Is the server running?', 'ai');
+      setStatus('Error', false);
+    } finally {
+      inp.disabled = false;
+      document.getElementById('btn-send').disabled = false;
+      inp.focus();
+    }
+  }
+
+  document.getElementById('btn-send').addEventListener('click', sendQuestion);
+
+  document.getElementById('question-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendQuestion();
+    }
+  });
+
+  // Auto-resize textarea
+  document.getElementById('question-input').addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+  });
+
+  /* ═══════════════════════════════════════════════════════
+     HISTORY CONTROLS
+  ═══════════════════════════════════════════════════════ */
+  document.getElementById('btn-new-chat').addEventListener('click', newChat);
+
+  document.getElementById('btn-clear-history').addEventListener('click', () => {
+    if (confirm('Clear all chat history?')) {
+      setHistory([]);
+      renderHistory();
+    }
+  });
+
+  /* ═══════════════════════════════════════════════════════
+     INIT
+  ═══════════════════════════════════════════════════════ */
+  (function init() {
+    currentHistoryId = 'session_' + Date.now();
+
+    // If server said a PDF is loaded (page refresh with session active)
+    if (activePdfName) {
+      setHeaderDoc(activePdfName);
+      enableInput(true);
+      document.getElementById('input-hint').style.display = 'none';
+    } else {
+      setHeaderDoc('');
+    }
+
+    renderHistory();
+  })();
+</script>
+</body>
+</html>
