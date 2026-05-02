@@ -1,0 +1,19 @@
+NEXAAI - USER MANUAL
+========================
+
+Thank you for using NexaAI! This tool allows you to extract precise data from any PDF or Scanned image.
+
+HOW TO USE:
+-----------
+1. Run 'install_and_setup.bat' once (requires Internet).
+2. Open the '.env' file in Notepad.
+3. Replace 'your_key_here' with your NVIDIA NIM or OpenRouter API Key.
+4. Run 'Launch_NexaAI.bat' to start the application.
+
+TIPS:
+-----
+- The app works best with NVIDIA NIM keys (nvapi-...).
+- For scanned documents, make sure your API key is active.
+- To upload a new document, use the sidebar.
+
+Support: contact@nexaai.com
