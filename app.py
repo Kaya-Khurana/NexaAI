@@ -156,5 +156,7 @@ def ask_question():
                            pdf_filename=meta.get("filename", ""))
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    # Use the port provided by Railway/Render, or default to 5000 for local dev
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
