@@ -25,8 +25,13 @@ SESSIONS_META_DIR = os.path.join("data", "sessions")
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 os.makedirs(SESSIONS_META_DIR, exist_ok=True)
 
-# ── Single global RAG engine ───────────────────────────────────────
-rag = RAGEngine()
+# ── Single global RAG engine (Lazy Initialized) ────────────────────
+_rag_instance = None
+def get_rag():
+    global _rag_instance
+    if _rag_instance is None:
+        _rag_instance = RAGEngine()
+    return _rag_instance
 
 
 # ── Session meta (persist filename across server restarts) ─────────
@@ -90,7 +95,7 @@ def upload_pdf():
         text, meta = pdf_extractor.extract(safe_path, api_key=OPENROUTER_KEY)
 
         # Build RAG index
-        success = rag.load_data(sid, text, filename=original_name)
+        success = get_rag().load_data(sid, text, filename=original_name)
         if not success:
             raise ValueError("Failed to build search index from document.")
 
@@ -146,7 +151,7 @@ def ask_question():
             "index.html", message=msg, message_type="error", pdf_filename="")
 
     try:
-        answer = rag.generate_answer(sid, question, openrouter_key=OPENROUTER_KEY)
+        answer = get_rag().generate_answer(sid, question, openrouter_key=OPENROUTER_KEY)
     except Exception as e:
         answer = f"System error: {str(e)}"
 
