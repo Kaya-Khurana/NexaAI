@@ -42,7 +42,9 @@ def _headers(api_key: str) -> dict:
     }
 
 def is_available(api_key: str) -> bool:
-    return bool(api_key and len(api_key.strip()) > 10)
+    if not api_key: return False
+    clean = str(api_key).strip()
+    return bool(clean and len(clean) > 10 and "your_api_key" not in clean)
 
 def ask_llm(context: str, question: str, api_key: str, filename: str = "") -> str | None:
     if not is_available(api_key): return None
