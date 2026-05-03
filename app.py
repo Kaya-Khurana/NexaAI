@@ -164,6 +164,6 @@ def ask_question():
 
 
 if __name__ == '__main__':
-    # Use the port provided by Railway/Render, or default to 5000 for local dev
-    port = int(os.environ.get("PORT", 5000))
+    # Use the port provided by Railway/Render, or default to 5001 for local dev
+    port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port)
